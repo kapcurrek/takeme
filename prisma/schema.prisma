@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// MODEL: USER
+// ============================================
+
+model User {
+  id              String  @id @default(cuid())
+  email           String  @unique
+  username        String  @unique
+  passwordHash    String
+  customSubdomain String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  links Link[]
+
+  @@map("users")
+}
+
+// ============================================
+// MODEL: LINK (Shortened URLs)
+// ============================================
+
+model Link {
+  id          String @id @default(cuid())
+  slug        String @unique
+  originalUrl String
+
+  // Relation to User
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  clicks LinkClick[]
+
+  @@index([userId])
+  @@index([slug])
+  @@map("links")
+}
+
+// ============================================
+// MODEL: LINKCLICK (Click Analytics)
+// ============================================
+
+model LinkClick {
+  id String @id @default(cuid())
+
+  // Relation to Link
+  linkId String
+  link   Link   @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  // Analitics Data
+  clickedAt DateTime @default(now())
+  userAgent String?
+  ipHash    String?
+  referer   String?
+
+  @@index([linkId])
+  @@index([clickedAt])
+  @@map("link_clicks")
+}
